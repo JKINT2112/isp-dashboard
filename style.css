@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: Arial;
@@ -8,7 +12,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh; /* FIXED */
+  padding: 10px; /* prevents edge cut on small screens */
 }
 
 .login-box {
@@ -16,6 +21,7 @@ body {
   padding: 25px;
   border-radius: 12px;
   width: 320px;
+  max-width: 100%; /* responsive fix */
   color: white;
   box-shadow: 0 0 15px rgba(0,0,0,0.4);
 }
