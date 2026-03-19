@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>MyApp</h2>
+    <ul>
+  <li onclick="showSection('home')">Home</li>
+  <li onclick="showSection('pppoe')">PPPoE Setup</li>
+  <li onclick="showSection('webproxy')">Web Proxy</li>
+    <li onclick="showSection('webproxy local')">Web Proxy Local</li>
+  <li onclick="logout()">Logout</li>
+</ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+
+  <!-- HOME -->
+  <div id="home" class="section">
+    <h1>Welcome 👋</h1>
+    <p>Select a script from the sidebar.</p>
+  </div>
+
+  <!-- PPPOE SCRIPT -->
+  <div id="pppoe" class="section" style="display:none;">
+    <h2>PPPoE Setup Script</h2>
+
+    <pre id="pppoe-script">
+/interface pppoe-server server
+add service-name=pppoe interface=ether1 default-profile=default
+
+/ppp profile
+add name=default local-address=20.0.0.1 remote-address=pppoe-pool
+
+/ip pool
+add name=pppoe-pool ranges=20.0.0.10-20.0.0.254
+    </pre>
+
+    <button onclick="copyScript('pppoe-script')">Copy</button>
+  </div>
+
+  <!-- WEB PROXY -->
+  <div id="webproxy" class="section" style="display:none;">
+    <h2>Web Proxy Setup</h2>
+
+    <pre id="proxy-script">
+
+
+        /ip proxy set enabled=yes port=8082
+
+
+🔧 1. ADDRESS LIST (CLONE)
+
+/ip firewall address-list
+add list=INSTALLPRO-BLACKLIST address=20.0.0.0/24
+add list=INSTALLPRO-WHITELIST address=megafiber.intong.online
+add list=INSTALLPRO-WHITELIST address=firebasestorage.googleapis.com
+
+🔧 2. NAT (CLONE — SAME STRUCTURE)
+
+/ip firewall nat
+add chain=srcnat action=masquerade src-address-list=INSTALLPRO-BLACKLIST comment="INSTALLPRO-SRCNAT"
+
+add chain=dstnat protocol=tcp dst-port=80 \
+src-address-list=INSTALLPRO-BLACKLIST \
+action=redirect to-ports=8080 comment="INSTALLPRO-DSTNAT"
+
+🔧 3. WEB PROXY (ENABLE SAME)
+/ip proxy
+set enabled=yes port=8080 max-cache-size=none
+
+🔧 4. WEB PROXY ACCESS (EXACT CLONE)
+
+⚠️ Order is IMPORTANT 
+
+/ip proxy access
+
+# 0 - DENY HTTP
+add src-address=20.0.0.0/24 dst-port=!80 action=deny
+
+# 1 - ALLOW YOUR DOMAIN
+add src-address=20.0.0.0/24 dst-host=megafiber.intong.online action=allow
+
+# 2 - REDIRECT TO PORTAL (SAME STYLE)
+add src-address=20.0.0.0/24 \
+dst-host=megafiber.intong.online \
+dst-port=80,443,8082 \
+action=redirect \
+redirect-to="megafiber.intong.online/p/YOUR_RANDOM_STRING"
+
+# 3 - ALLOW FIREBASE STORAGE
+add src-address=20.0.0.0/24 \
+dst-host=firebasestorage.googleapis.com \
+action=allow
+
+🔧 5. FIREWALL FILTER (CLONE)
+
+/ip firewall filter
+
+# 0 INSTALLPRO-ACCEPT (whitelist pass)
+add chain=forward action=accept dst-address-list=INSTALLPRO-WHITELIST comment="INSTALLPRO-ACCEPT"
+
+# 1 Allow Firebase Storage traffic (SPECIFIC SRC)
+add chain=forward action=accept \
+src-address=20.0.0.0/24 \
+dst-address-list=INSTALLPRO-WHITELIST \
+comment="Allow Firebase Storage traffic"
+
+# 2 DROP HTTP (blacklist)
+add chain=forward action=drop \
+src-address-list=INSTALLPRO-BLACKLIST \
+protocol=tcp dst-port=!80 \
+comment="INSTALLPRO-DROP"
+
+# 3 DROP HTTPS (blacklist)
+add chain=forward action=drop \
+src-address-list=INSTALLPRO-BLACKLIST \
+protocol=tcp dst-port=443 \
+comment="INSTALLPRO-DROP"
+
+# 4 DROP UDP 443 (QUIC)
+add chain=forward action=drop \
+src-address-list=INSTALLPRO-BLACKLIST \
+protocol=udp dst-port=443 \
+comment="INSTALLPRO-DROP"
+
+# 5 Allow Firebase Storage - Forward
+add chain=forward action=accept \
+dst-address-list=INSTALLPRO-WHITELIST \
+comment="Allow Firebase Storage - Forward"
+
+# 6 Allow Firebase Storage - Output
+add chain=output action=accept \
+dst-address-list=INSTALLPRO-WHITELIST \
+comment="Allow Firebase Storage - Output"
+
+# 7 Allow Firebase Storage - Input
+add chain=input action=accept \
+dst-address-list=INSTALLPRO-WHITELIST \
+comment="Allow Firebase Storage - Input"
+
+# 8 Allow DNS UDP
+add chain=forward action=accept protocol=udp dst-port=53 comment="Allow DNS - UDP"
+
+# 9 Allow DNS TCP
+add chain=forward action=accept protocol=tcp dst-port=53 comment="Allow DNS - TCP"
+
+
+
+/ip firewall nat
+add chain=dstnat protocol=tcp dst-port=80 action=redirect to-ports=8082
+
+    </pre>
+
+
+    
+    <button onclick="copyScript('proxy-script')">Copy</button>
+  </div>
+
+
+
+<!-- WEB PROXY LOCAL -->
+  <div id="webproxy local" class="section" style="display:none;">
+    <h2>Web Proxy Local Setup</h2>
+
+    <pre id="proxy-script">
+
+⚙️ STEP 1 — CREATE IP POOL
+
+Assign IP range for past due users.
+
+/ip pool
+add name=past_due ranges=20.0.0.10-20.0.0.254
+
+⚙️ STEP 2 — ADDRESS LIST
+
+Group all past due IPs.
+
+/ip firewall address-list
+add list=PD address=20.0.0.0/24 comment="Past Due Users"
+
+⚙️ STEP 3 — ENABLE DNS
+
+Allow MikroTik to act as DNS server.
+
+/ip dns
+set allow-remote-requests=yes
+
+⚙️ STEP 4 — DNS STATIC ENTRY
+
+Create redirect domain (NO SPACE).
+
+/ip dns static
+add name=pastdue.account address=20.0.0.1
+
+✔ This domain will point to your router
+
+⚙️ STEP 5 — ENABLE WEB PROXY
+
+Turn on proxy service.
+
+/ip proxy
+set enabled=yes port=5050 max-cache-size=none
+
+⚙️ STEP 6 — PROXY ACCESS RULES
+
+Control how traffic is handled.
+
+/ip proxy access
+add src-address=20.0.0.0/24 dst-port=5050 action=allow comment="Allow proxy"
+
+add src-address=20.0.0.0/24 dst-port=80 action=redirect redirect-to=pastdue.account comment="Redirect HTTP"
+
+⚙️ STEP 7 — NAT REDIRECT (IMPORTANT)
+
+Send HTTP traffic to proxy.
+
+/ip firewall nat
+add chain=dstnat protocol=tcp dst-port=80 src-address-list=PD action=redirect to-ports=5050 comment="Redirect to proxy"
+
+⚙️ STEP 8 — BLOCK HTTPS
+
+Prevent bypass (required).
+
+/ip firewall filter
+add chain=forward protocol=tcp dst-port=443 src-address-list=PD action=reject reject-with=tcp-reset comment="Block HTTPS"
+
+⚙️ STEP 9 — PPP PROFILE
+
+Assign this profile to unpaid users.
+
+/ppp profile
+add name=past_due local-address=20.0.0.1 remote-address=past_due rate-limit=1M/1M
+
+📁 STEP 10 — UPLOAD PAYMENT PAGE
+
+Upload your HTML file:
+
+📂 Files → flash/webproxy/
+
+Example:
+
+error.html
+
+
+
+
+
+    </pre>
+
+
+    
+    <button onclick="copyScript('proxy-script')">Copy</button>
+  </div>
+
+
+
+
+
+</div>
+
+</div>
+
+<script src="dashboard.js"></script>
+
+</body>
+</html>
