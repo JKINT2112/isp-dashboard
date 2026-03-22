@@ -6,7 +6,7 @@ async function login() {
   error.innerText = "";
 
   // 🔁 Replace this with your real backend
-  if (username === "admin" && password === "1234") {
+  if (username === "admin" && password === "802.11ax") {
     localStorage.setItem("user", username);
 
     window.location.href = "dashboard.html";
