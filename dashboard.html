@@ -35,14 +35,70 @@
     <h2>PPPoE Setup Script</h2>
 
     <pre id="pppoe-script">
-/interface pppoe-server server
-add service-name=pppoe interface=ether1 default-profile=default
+⚙️ FULL CLEAN SCRIPT (copy-paste safe)
+      
+🌐 1. WAN (Internet from ISP via ether1)
+      
+/ip dhcp-client add interface=ether1 disabled=no
+      
+💻 2. LAN for your laptop (ether2)
 
-/ppp profile
-add name=default local-address=20.0.0.1 remote-address=pppoe-pool
+Set a fixed IP so you can access MikroTik
 
-/ip pool
-add name=pppoe-pool ranges=20.0.0.10-20.0.0.254
+/ip address add address=192.168.88.1/24 interface=ether2
+
+(Optional DHCP for your laptop)
+
+/ip pool add name=lan_pool ranges=192.168.88.10-192.168.88.100
+/ip dhcp-server add name=dhcp1 interface=ether2 address-pool=lan_pool disabled=no
+/ip dhcp-server network add address=192.168.88.0/24 gateway=192.168.88.1 dns-server=8.8.8.8
+
+      
+📦 3. PPPoE Network (ether3 → /24 pool)
+
+Use: 192.168.10.0/24
+
+/ip pool add name=pppoe_pool ranges=192.168.10.2-192.168.10.254
+/ip address add address=192.168.10.1/24 interface=ether3
+      
+🚀 4. PPP Profiles (Speed Limits)
+      
+20 Mbps
+/ppp profile add name=20M local-address=192.168.10.1 remote-address=pppoe_pool rate-limit=20M/20M
+30 Mbps
+/ppp profile add name=30M local-address=192.168.10.1 remote-address=pppoe_pool rate-limit=30M/30M
+🔌 5. Enable PPPoE Server (on ether3)
+/interface pppoe-server server add interface=ether3 service-name=pppoe disabled=no default-profile=20M
+👤 6. PPPoE Users
+/ppp secret add name=user20 password=1234 profile=20M service=pppoe
+/ppp secret add name=user30 password=1234 profile=30M service=pppoe
+      
+🌍 7. NAT (Internet access)
+      
+/ip firewall nat add chain=srcnat out-interface=ether1 action=masquerade
+      
+🌐 8. DNS (important)
+      
+/ip dns set servers=8.8.8.8,1.1.1.1 allow-remote-requests=yes
+      
+✅ HOW IT WORKS
+      
+Laptop (ether2) → access router (192.168.88.1)
+Clients connect to ether3 → dial PPPoE
+Router gives IP from 192.168.10.x
+Speed depends on profile (20M / 30M)
+      
+⚠️ IMPORTANT NOTES
+Do NOT bridge ether2 and ether3
+PPPoE must stay isolated on ether3
+Make sure your ISP actually gives internet via DHCP on ether1
+🧪 TEST CHECKLIST
+Plug laptop → ether2 → access Winbox (192.168.88.1)
+Check internet:
+ping 8.8.8.8
+Connect PPPoE client on ether3
+Test speed
+      
     </pre>
 
     <button onclick="copyScript('pppoe-script')">Copy</button>
