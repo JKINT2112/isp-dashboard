@@ -64,12 +64,19 @@ Use: 192.168.10.0/24
 🚀 4. PPP Profiles (Speed Limits)
       
 20 Mbps
+      
 /ppp profile add name=20M local-address=192.168.10.1 remote-address=pppoe_pool rate-limit=20M/20M
+      
 30 Mbps
+      
 /ppp profile add name=30M local-address=192.168.10.1 remote-address=pppoe_pool rate-limit=30M/30M
+      
 🔌 5. Enable PPPoE Server (on ether3)
+      
 /interface pppoe-server server add interface=ether3 service-name=pppoe disabled=no default-profile=20M
+      
 👤 6. PPPoE Users
+      
 /ppp secret add name=user20 password=1234 profile=20M service=pppoe
 /ppp secret add name=user30 password=1234 profile=30M service=pppoe
       
