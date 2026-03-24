@@ -125,7 +125,7 @@ Test speed
 
 /ip firewall address-list
 add list=INSTALLPRO-BLACKLIST address=20.0.0.0/24
-add list=INSTALLPRO-WHITELIST address=megafiber.intong.online
+add list=INSTALLPRO-WHITELIST address=pastdue-f6e0d.web.app
 add list=INSTALLPRO-WHITELIST address=firebasestorage.googleapis.com
 
 🔧 2. NAT (CLONE — SAME STRUCTURE)
@@ -135,13 +135,13 @@ add chain=srcnat action=masquerade src-address-list=INSTALLPRO-BLACKLIST comment
 
 add chain=dstnat protocol=tcp dst-port=80 \
 src-address-list=INSTALLPRO-BLACKLIST \
-action=redirect to-ports=8080 comment="INSTALLPRO-DSTNAT"
+action=redirect to-ports=8082 comment="INSTALLPRO-DSTNAT"
 
 🔧 3. WEB PROXY (ENABLE SAME)
 /ip proxy
-set enabled=yes port=8080 max-cache-size=none
+set enabled=yes port=8082 max-cache-size=none
 
-🔧 4. WEB PROXY ACCESS (EXACT CLONE)
+🔧 4. WEB PROXY ACCESS 
 
 ⚠️ Order is IMPORTANT 
 
@@ -151,14 +151,14 @@ set enabled=yes port=8080 max-cache-size=none
 add src-address=20.0.0.0/24 dst-port=!80 action=deny
 
 # 1 - ALLOW YOUR DOMAIN
-add src-address=20.0.0.0/24 dst-host=megafiber.intong.online action=allow
+add src-address=20.0.0.0/24 dst-host=pastdue-f6e0d.web.app action=allow
 
 # 2 - REDIRECT TO PORTAL (SAME STYLE)
 add src-address=20.0.0.0/24 \
-dst-host=megafiber.intong.online \
-dst-port=80,443,8082 \
+
+dst-port=80 \
 action=redirect \
-redirect-to="megafiber.intong.online/p/YOUR_RANDOM_STRING"
+redirect-to="https://pastdue-f6e0d.web.app/"
 
 # 3 - ALLOW FIREBASE STORAGE
 add src-address=20.0.0.0/24 \
@@ -170,57 +170,64 @@ action=allow
 /ip firewall filter
 
 # 0 INSTALLPRO-ACCEPT (whitelist pass)
+      
 add chain=forward action=accept dst-address-list=INSTALLPRO-WHITELIST comment="INSTALLPRO-ACCEPT"
 
 # 1 Allow Firebase Storage traffic (SPECIFIC SRC)
+      
 add chain=forward action=accept \
 src-address=20.0.0.0/24 \
 dst-address-list=INSTALLPRO-WHITELIST \
 comment="Allow Firebase Storage traffic"
 
 # 2 DROP HTTP (blacklist)
+      
 add chain=forward action=drop \
 src-address-list=INSTALLPRO-BLACKLIST \
 protocol=tcp dst-port=!80 \
 comment="INSTALLPRO-DROP"
 
 # 3 DROP HTTPS (blacklist)
+      
 add chain=forward action=drop \
 src-address-list=INSTALLPRO-BLACKLIST \
 protocol=tcp dst-port=443 \
 comment="INSTALLPRO-DROP"
 
 # 4 DROP UDP 443 (QUIC)
+      
 add chain=forward action=drop \
 src-address-list=INSTALLPRO-BLACKLIST \
 protocol=udp dst-port=443 \
 comment="INSTALLPRO-DROP"
 
 # 5 Allow Firebase Storage - Forward
+      
 add chain=forward action=accept \
 dst-address-list=INSTALLPRO-WHITELIST \
 comment="Allow Firebase Storage - Forward"
 
 # 6 Allow Firebase Storage - Output
+      
 add chain=output action=accept \
 dst-address-list=INSTALLPRO-WHITELIST \
 comment="Allow Firebase Storage - Output"
 
 # 7 Allow Firebase Storage - Input
+      
 add chain=input action=accept \
 dst-address-list=INSTALLPRO-WHITELIST \
 comment="Allow Firebase Storage - Input"
 
 # 8 Allow DNS UDP
+      
 add chain=forward action=accept protocol=udp dst-port=53 comment="Allow DNS - UDP"
 
 # 9 Allow DNS TCP
+      
 add chain=forward action=accept protocol=tcp dst-port=53 comment="Allow DNS - TCP"
 
-
-
-/ip firewall nat
-add chain=dstnat protocol=tcp dst-port=80 action=redirect to-ports=8082
+DONE
 
     </pre>
 
